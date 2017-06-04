@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="icezhg.spweb.dao.SscDao">
+    <resultMap id="resultMap" type="icezhg.spweb.domain.Ssc">
+        <id property="id" column="id"/>
+        <result property="wa" column="wa"/>
+        <result property="qa" column="qa"/>
+        <result property="ba" column="ba"/>
+        <result property="sh" column="sh"/>
+        <result property="ge" column="ge"/>
+    </resultMap>
+
+    <sql id="allFields">
+        id, wa, qa, ba, sh, ge
+    </sql>
+
+    <select id="queryById" parameterType="int" resultMap="resultMap">
+        SELECT
+            <include refid="allFields"/>
+        FROM
+            cqssc
+        WHERE id = #{id}
+    </select>
+
+    <select id="findLast" resultMap="resultMap">
+        SELECT
+            <include refid="allFields"/>
+        FROM
+            cqssc
+        ORDER BY id DESC
+        LIMIT 1
+    </select>
+</mapper>
