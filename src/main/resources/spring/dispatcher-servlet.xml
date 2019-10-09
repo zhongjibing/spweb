@@ -9,11 +9,21 @@
           class="org.springframework.web.servlet.view.InternalResourceViewResolver"
           p:prefix="/WEB-INF/jsp/" p:suffix=".jsp"/>
 
-    <context:component-scan base-package="icezhg.spweb">
-        <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
-    </context:component-scan>
+<!--    <context:component-scan base-package="icezhg.spweb">-->
+<!--        <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>-->
+<!--    </context:component-scan>-->
     
     <mvc:annotation-driven/>
 
     <mvc:default-servlet-handler/>
+
+
+
+    <mvc:interceptors>
+        <bean class="brave.spring.webmvc.SpanCustomizingHandlerInterceptor"/>
+    </mvc:interceptors>
+
+    <!-- Loads the controller -->
+    <context:component-scan base-package="icezhg.spweb"/>
+    <mvc:annotation-driven/>
 </beans>

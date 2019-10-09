@@ -2,13 +2,80 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
 
     <context:component-scan base-package="icezhg.spweb"/>
 
-    <import resource="orm-context.xml"/>
+<!--    <import resource="orm-context.xml"/>-->
     <import resource="threadpools.xml"/>
 
+<!--    <bean id="sender" class="zipkin2.reporter.beans.OkHttpSenderFactoryBean">-->
+<!--        <property name="endpoint" value="http://localhost:9411/api/v2/spans"/>-->
+<!--    </bean>-->
+
+    <!-- allows us to read the service name from spring config -->
+    <context:property-placeholder/>
+
+    <!-- Controls aspects of tracing such as the service name that shows up in the UI -->
+    <bean id="tracing" class="brave.spring.beans.TracingFactoryBean">
+        <property name="sampler" value="NEVER_SAMPLE"/>
+<!--        <property name="localServiceName" value="${zipkin.service:brave-webmvc-example}"/>-->
+<!--        <property name="spanReporter">-->
+<!--            <bean class="zipkin2.reporter.Reporter.NOOP"/>-->
+<!--            <bean class="zipkin2.reporter.beans.AsyncReporterFactoryBean">-->
+<!--                <property name="encoder" value="JSON_V2"/>-->
+<!--                <property name="sender" ref="sender"/>-->
+<!--                &lt;!&ndash; wait up to half a second for any in-flight spans on close &ndash;&gt;-->
+<!--                <property name="closeTimeout" value="500"/>-->
+<!--            </bean>-->
+<!--        </property>-->
+        <property name="propagationFactory">
+            <bean id="propagationFactory" class="brave.propagation.ExtraFieldPropagation" factory-method="newFactory">
+                <constructor-arg index="0">
+                    <util:constant static-field="brave.propagation.B3Propagation.FACTORY"/>
+                </constructor-arg>
+                <constructor-arg index="1">
+                    <list>
+                        <value>user-name</value>
+                    </list>
+                </constructor-arg>
+            </bean>
+        </property>
+        <property name="currentTraceContext">
+<!--            <bean class="icezhg.spweb.trace.Slf4jCurrentTraceContext" factory-method="create"/>-->
+            <bean class="brave.spring.beans.CurrentTraceContextFactoryBean">
+                <property name="scopeDecorators">
+                    <bean class="brave.context.slf4j.MDCScopeDecorator" factory-method="create"/>
+                </property>
+            </bean>
+        </property>
+    </bean>
+
+    <!-- Allows someone to add tags to a span if a trace is in progress, via SpanCustomizer -->
+    <bean id="spanCustomizer" class="brave.CurrentSpanCustomizer" factory-method="create">
+        <constructor-arg index="0" ref="tracing"/>
+    </bean>
+
+    <!-- Decides how to name and tag spans. By default they are named the same as the http method. -->
+    <bean id="httpTracing" class="brave.spring.beans.HttpTracingFactoryBean">
+        <property name="tracing" ref="tracing"/>
+    </bean>
+
+    <bean id="httpClientBuilder" class="brave.httpclient.TracingHttpClientBuilder"
+          factory-method="create">
+        <constructor-arg ref="httpTracing"/>
+    </bean>
+
+    <bean id="httpClient" factory-bean="httpClientBuilder" factory-method="build"/>
+
+    <bean id="restTemplate" class="org.springframework.web.client.RestTemplate">
+        <constructor-arg>
+            <bean class="org.springframework.http.client.HttpComponentsClientHttpRequestFactory">
+                <constructor-arg ref="httpClient"/>
+            </bean>
+        </constructor-arg>
+    </bean>
 
 </beans>

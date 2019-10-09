@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 public class SscServiceImpl implements SscService {
     private static final Logger LOGGER = LoggerFactory.getLogger(SscServiceImpl.class);
 
-    @Resource
+//    @Resource
     private SscDao sscDao;
 
     @Override
